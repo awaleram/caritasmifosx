@@ -675,11 +675,18 @@ public class Loan extends AbstractPersistable<Long> {
     private void validateChargeHasValidSpecifiedDateIfApplicable(final LoanCharge loanCharge, final LocalDate disbursementDate,
             final LocalDate lastRepaymentPeriodDueDateForCharges) {
         if (loanCharge.isSpecifiedDueDate()
-                && !loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate, lastRepaymentPeriodDueDateForCharges)) {
-            final String defaultUserMessage = "This charge with specified due date cannot be added as the it is not in schedule range.";
+                && !loanCharge.isDueForCollectionFromAndUpToAndIncluding(disbursementDate,LocalDate.now())) {
+            final String defaultUserMessage = "This charge with specified due date cannot be added as the it is future date.";
             throw new LoanChargeCannotBeAddedException("loanCharge", "specified.due.date.outside.range", defaultUserMessage,
-                    getDisbursementDate(), lastRepaymentPeriodDueDateForCharges, loanCharge.name());
+                    getDisbursementDate(), LocalDate.now(), loanCharge.name());
         }
+       
+        	if(loanCharge.isDueForCollectionFromAndUpToAndIncluding(lastRepaymentPeriodDueDateForCharges,LocalDate.now())){
+        		
+        		this.repaymentScheduleInstallments.add(new LoanRepaymentScheduleInstallment(loanCharge.getLoan(),this.repaymentScheduleInstallments.size()+1,lastRepaymentPeriodDueDateForCharges,loanCharge.getDueLocalDate(), BigDecimal.ZERO, BigDecimal.ZERO, BigDecimal.ZERO,BigDecimal.ZERO,false));
+        	
+        	}
+        
     }
 
     private LocalDate getLastRepaymentPeriodDueDateForCharges() {
