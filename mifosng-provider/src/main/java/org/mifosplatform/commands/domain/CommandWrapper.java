@@ -1057,5 +1057,10 @@ public class CommandWrapper {
     	return this.actionName.equalsIgnoreCase("DELETE") && this.entityName.equalsIgnoreCase("SAVINGINVESTMENT");
     }
     
+    public boolean isUploadTransactionDetails(){
+    	return this.actionName.equalsIgnoreCase("CREATE") && this.entityName.equalsIgnoreCase("UPLOADSHEET");
+    }
+    
+    
 
 }

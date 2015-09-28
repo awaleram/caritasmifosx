@@ -1526,6 +1526,11 @@ public class SynchronousCommandProcessingService implements
 						"deleteSavingInvestmentCommandHandler",
 						NewCommandSourceHandler.class);
 			}
+		}else if(wrapper.isUploadTransactionDetails()){
+			handler = this.applicationContext.getBean(
+					"uploadTransactionDetailsCommandHandler",
+					NewCommandSourceHandler.class);
+			
 		}
 
 		else {

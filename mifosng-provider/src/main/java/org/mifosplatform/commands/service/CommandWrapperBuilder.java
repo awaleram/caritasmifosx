@@ -5,6 +5,8 @@
  */
 package org.mifosplatform.commands.service;
 
+import javax.ws.rs.core.MediaType;
+
 import org.mifosplatform.commands.domain.CommandWrapper;
 import org.mifosplatform.infrastructure.accountnumberformat.service.AccountNumberFormatConstants;
 import org.mifosplatform.portfolio.paymenttype.api.PaymentTypeApiResourceConstants;
@@ -27,6 +29,7 @@ public class CommandWrapperBuilder {
     private String transactionId;
     private Long productId;
     private Long templateId;
+    private MediaType file;
 
     public CommandWrapper build() {
         return new CommandWrapper(this.officeId, this.groupId, this.clientId, this.loanId, this.savingsId, this.actionName,
@@ -67,6 +70,12 @@ public class CommandWrapperBuilder {
         this.json = withJson;
         return this;
     }
+    
+    public CommandWrapperBuilder withMediaType(final MediaType withMediaType) {
+        this.file = withMediaType;
+        return this;
+    }
+
 
     public CommandWrapperBuilder withNoJsonBody() {
         this.json = null;
@@ -2434,6 +2443,15 @@ public class CommandWrapperBuilder {
         this.entityName = "PAYMENTTYPE";
         this.entityId = paymentTypeId;
         this.href = "/" + PaymentTypeApiResourceConstants.RESOURCE_NAME + paymentTypeId;
+        return this;
+    }
+    
+    
+    public CommandWrapperBuilder uploadDetails() {
+        this.actionName = "CREATE";
+        this.entityName = "UPLOADSHEET";
+        this.entityId = null;
+        this.href = "/uploadxls" ;
         return this;
     }
 
