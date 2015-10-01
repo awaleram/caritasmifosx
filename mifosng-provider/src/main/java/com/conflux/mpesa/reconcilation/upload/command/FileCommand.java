@@ -2,16 +2,24 @@ package com.conflux.mpesa.reconcilation.upload.command;
 
 
 public class FileCommand {
+	private String officeId;
 	 private String fileName;
 	    private Long size;
 	    private String type;
 	    private String location;
-	    public FileCommand(final String fileName,final Long size,final String type,final String location){
+	    public FileCommand(final String officeId,final String fileName,final Long size,final String type,final String location){
+	    	this.officeId = officeId;
 	    	this.fileName =fileName;
 	    	this.size = size;
 	    	this.type = type;
 	    	this.location = location;
 	    }
+		public String getOfficeId() {
+			return this.officeId;
+		}
+		public void setOfficeId(String officeId) {
+			this.officeId = officeId;
+		}
 		public String getFileName() {
 			return this.fileName;
 		}

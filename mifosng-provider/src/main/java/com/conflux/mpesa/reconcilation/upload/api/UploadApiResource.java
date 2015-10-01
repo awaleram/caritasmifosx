@@ -42,10 +42,10 @@ public final class UploadApiResource {
     @Consumes({MediaType.MULTIPART_FORM_DATA})
     @Produces({ MediaType.APPLICATION_JSON })
     public String uploadTransactionDetails(@HeaderParam("Content-Length") final Long fileSize, @FormDataParam("file") final InputStream inputStream,
-            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart) {
+            @FormDataParam("file") final FormDataContentDisposition fileDetails, @FormDataParam("file") final FormDataBodyPart bodyPart, @FormDataParam("officeId") final String officeId) {
 		
 
-		final FileCommand fileCommand = new FileCommand(fileDetails.getFileName(),fileSize, bodyPart.getMediaType().toString(),null );
+		final FileCommand fileCommand = new FileCommand(officeId,fileDetails.getFileName(),fileSize, bodyPart.getMediaType().toString(),null );
 
 		 final String result = this.uploadWritePlatformService.uploadDetails(fileCommand, inputStream);
     	
