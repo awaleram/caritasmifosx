@@ -44,6 +44,7 @@ import org.mifosplatform.portfolio.group.exception.ClientExistInGroupException;
 import org.mifosplatform.portfolio.group.exception.ClientNotInGroupException;
 import org.mifosplatform.portfolio.group.exception.GroupExistsInCenterException;
 import org.mifosplatform.portfolio.group.exception.GroupNotExistsInCenterException;
+import org.mifosplatform.portfolio.group.exception.InvalidEmailAdressException;
 import org.mifosplatform.portfolio.group.exception.InvalidGroupStateTransitionException;
 import org.mifosplatform.useradministration.domain.AppUser;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -118,6 +119,12 @@ public final class Group extends AbstractPersistable<Long> {
     @ManyToOne(optional = true)
     @JoinColumn(name = "submittedon_userid", nullable = true)
     private AppUser submittedBy;
+    
+    @Column(name = "mobile_no", length = 10, unique = true)
+    private String mobileNo;
+    
+    @Column(name = "email_Id", unique = true)
+    private String emailId;
 
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "center", orphanRemoval = true)
     private Set<StaffAssignmentHistory> staffHistory;
@@ -130,7 +137,7 @@ public final class Group extends AbstractPersistable<Long> {
     }
 
     public static Group newGroup(final Office office, final Staff staff, final Group parent, final GroupLevel groupLevel,
-            final String name, final String externalId, final boolean active, final LocalDate activationDate,
+            final String name, final String externalId, final boolean active, final LocalDate activationDate,final String mobileNo,final String emailId,
             final Set<Client> clientMembers, final Set<Group> groupMembers, final LocalDate submittedOnDate, final AppUser currentUser) {
 
         // By default new group is created in PENDING status, unless explicitly
@@ -142,12 +149,12 @@ public final class Group extends AbstractPersistable<Long> {
             groupActivationDate = activationDate;
         }
 
-        return new Group(office, staff, parent, groupLevel, name, externalId, status, groupActivationDate, clientMembers, groupMembers,
+        return new Group(office, staff, parent, groupLevel, name, externalId, status, groupActivationDate,mobileNo,emailId, clientMembers, groupMembers,
                 submittedOnDate, currentUser);
     }
 
     private Group(final Office office, final Staff staff, final Group parent, final GroupLevel groupLevel, final String name,
-            final String externalId, final GroupingTypeStatus status, final LocalDate activationDate, final Set<Client> clientMembers,
+            final String externalId, final GroupingTypeStatus status, final LocalDate activationDate,final String mobileNo,final String emailId, final Set<Client> clientMembers,
             final Set<Group> groupMembers, final LocalDate submittedOnDate, final AppUser currentUser) {
 
         final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
@@ -156,6 +163,8 @@ public final class Group extends AbstractPersistable<Long> {
         this.staff = staff;
         this.groupLevel = groupLevel;
         this.parent = parent;
+        this.mobileNo=mobileNo;
+        this.emailId=emailId;
 
         if (parent != null) {
             this.parent.addChild(this);
@@ -235,6 +244,13 @@ public final class Group extends AbstractPersistable<Long> {
         validateActivationDate(dataValidationErrors);
 
     }
+    
+    public boolean isValidEmailAddress(String email) {
+        String ePattern = "^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@((\\[[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\])|(([a-zA-Z\\-0-9]+\\.)+[a-zA-Z]{2,}))$";
+        java.util.regex.Pattern p = java.util.regex.Pattern.compile(ePattern);
+        java.util.regex.Matcher m = p.matcher(email);
+        return m.matches();
+ }
 
     public boolean isActivatedAfter(final LocalDate submittedOn) {
         return getActivationLocalDate().isAfter(submittedOn);
@@ -289,6 +305,25 @@ public final class Group extends AbstractPersistable<Long> {
             final String newValue = command.stringValueOfParameterNamed(GroupingTypesApiConstants.nameParamName);
             actualChanges.put(GroupingTypesApiConstants.nameParamName, newValue);
             this.name = StringUtils.defaultIfEmpty(newValue, null);
+        }
+        
+        if (command.isChangeInStringParameterNamed(GroupingTypesApiConstants.emailIdParamName, this.emailId)) {
+            final String newValue = command.stringValueOfParameterNamed(GroupingTypesApiConstants.emailIdParamName);
+            boolean test = isValidEmailAddress(newValue);
+            if(test){
+            actualChanges.put(GroupingTypesApiConstants.emailIdParamName, newValue);
+            this.emailId = StringUtils.defaultIfEmpty(newValue, null);
+            }
+            else{
+            	throw new InvalidEmailAdressException(newValue);
+            }
+        }
+        
+        if (command.isChangeInStringParameterNamed(GroupingTypesApiConstants.mobileNoParamName, this.mobileNo)) {
+            final String newValue = command.stringValueOfParameterNamed(GroupingTypesApiConstants.mobileNoParamName);
+            String newVal = "254"+newValue;
+            actualChanges.put(GroupingTypesApiConstants.mobileNoParamName, newVal);
+            this.mobileNo = StringUtils.defaultIfEmpty(newVal, null);
         }
 
         final String dateFormatAsInput = command.dateFormat();
@@ -436,7 +471,23 @@ public final class Group extends AbstractPersistable<Long> {
         return this.groupLevel.isGroup();
     }
 
-    public boolean isTransferInProgress() {
+    public String getMobileNo() {
+		return this.mobileNo;
+	}
+
+	public void setMobileNo(String mobileNo) {
+		this.mobileNo = mobileNo;
+	}
+
+	public String getEmailId() {
+		return this.emailId;
+	}
+
+	public void setEmailId(String emailId) {
+		this.emailId = emailId;
+	}
+
+	public boolean isTransferInProgress() {
         return GroupingTypeStatus.fromInt(this.status).isTransferInProgress();
     }
 

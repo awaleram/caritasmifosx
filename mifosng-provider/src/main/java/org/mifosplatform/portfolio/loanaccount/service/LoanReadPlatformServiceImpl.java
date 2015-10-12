@@ -853,7 +853,10 @@ public class LoanReadPlatformServiceImpl implements LoanReadPlatformService {
                 final Integer groupStatusEnum = JdbcSupport.getInteger(rs, "statusEnum");
                 final EnumOptionData groupStatus = ClientEnumerations.status(groupStatusEnum);
                 final LocalDate activationDate = JdbcSupport.getLocalDate(rs, "activationDate");
-                groupData = GroupGeneralData.instance(groupId, groupName, groupExternalId, groupStatus, activationDate, groupOfficeId,
+                final String mobileNo=rs.getString("mobileNo");
+                final String emailId=rs.getString("emailId");
+                
+                groupData = GroupGeneralData.instance(groupId, groupName, groupExternalId, groupStatus, activationDate,mobileNo,emailId, groupOfficeId,
                         null, groupParentId, null, groupStaffId, null, groupHierarchy, null);
             }
 
