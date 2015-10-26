@@ -1533,6 +1533,14 @@ public class SynchronousCommandProcessingService implements
 				handler = this.applicationContext.getBean(
 						"updateSavingInvestmentCommandHandler",
 						NewCommandSourceHandler.class);
+			}else if(wrapper.isCloseSavingInvestment()){
+				handler = this.applicationContext.getBean("closeSavingInvestmentCommandHandler",
+						NewCommandSourceHandler.class);
+			}
+		}else if(wrapper.isInvestmentJob()){
+			if(wrapper.isInvestmentBatchJob()){
+				handler = this.applicationContext.getBean("runInvestmentBatchJobCommandHandler", 
+						NewCommandSourceHandler.class);
 			}
 		}
 
