@@ -17,4 +17,5 @@ public interface InvestmentWritePlatformService {
     CommandProcessingResult updateSavingInvestment(Long savingsAccountId,JsonCommand command);
     CommandProcessingResult updateLoanInvestment(Long loanId,JsonCommand command);
     CommandProcessingResult closeSavingInvestment(Long savingId, JsonCommand command);
+    CommandProcessingResult closeLoanInvestment(Long loanId, JsonCommand command);
 }

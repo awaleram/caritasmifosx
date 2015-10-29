@@ -1192,6 +1192,15 @@ public class CommandWrapperBuilder {
             	return this;
             }
     	    
+            public CommandWrapperBuilder closeLoanInvestment(final Long loanId){
+            	this.actionName = "CLOSE";
+            	this.entityName = "LOANINVESTMENT";
+            	this.loanId = loanId;
+            	this.entityId = loanId;
+            	this.href = "/loans/" + loanId + "/loanInvestment/close";
+            	return this;
+            }
+            
     	    public CommandWrapperBuilder deleteInvestmentBasedOnMapping(final Long savingsAccountId){
     	        
     	        this.actionName = "DELETE";

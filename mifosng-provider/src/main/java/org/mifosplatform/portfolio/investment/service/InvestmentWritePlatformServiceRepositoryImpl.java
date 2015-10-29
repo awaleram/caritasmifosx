@@ -277,6 +277,12 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         final List<Date> newCloseDate = new ArrayList<Date>();
         Date date = new Date();
         
+        
+        BigDecimal minRequiredBalance = null;
+      
+        
+        
+        
         DateFormat formateDate = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
         
         if (savingIds != null) {
@@ -377,11 +383,18 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         
         
         for (int i = 0; i < newSavingId.size(); i++) {
+        	  SavingsAccount account = this.savingAccount.findOne(newSavingId.get(i));
+              BigDecimal availableMinBal = account.getMinRequiredBalance();
+              BigDecimal investementAmount = new BigDecimal(newInvestedAmount.get(i));
+              BigDecimal newMinBal = availableMinBal.add(investementAmount);
+              account.setMinRequiredBalance(newMinBal);
+             
         	
         	if(check == 0){
             Investment savingInvestment = new Investment(newSavingId.get(i), loanid, newInvestedAmount.get(i),
             		newStartDate.get(i), null);
-            this.repositoryWrapper.save(savingInvestment);
+              this.repositoryWrapper.save(savingInvestment);
+              this.savingAccount.save(account);
         	}
         	else{
         		throw new NoFundsAvailableException();
@@ -635,10 +648,48 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
 	    	this.repositoryWrapper.save(savingInvestment);
 	    	
 		} catch (ParseException e) {
-			// TODO Auto-generated catch block
+			// TODO Auto-generated catch blocky
 			e.printStackTrace();
 		}
         
         return new CommandProcessingResultBuilder().build();
     }
+
+	@Override
+	public CommandProcessingResult closeLoanInvestment(Long loanId,
+			JsonCommand command) {
+
+        Long savingId = command.longValueOfParameterNamed("savingId");
+        String closeDate = command.stringValueOfParameterNamed("closeDate");
+    	String startDate = command.stringValueOfParameterNamed("startDate");
+    	
+    	DateFormat formateDate = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
+        
+    	try {
+        		
+        	Date closedDate = formateDate.parse(closeDate);
+			Long id = this.savingInvestment.retriveSavingInvestmentId(savingId, loanId, startDate);
+	    	Investment loanInvestment = this.repositoryWrapper.findWithNotFoundDetection(id);
+	        loanInvestment.setCloseDate(closedDate);
+	        Long investedAmount = loanInvestment.getInvestedAmount();
+	        SavingsAccount account = this.savingAccount.findOne(savingId);
+	        BigDecimal availableMinRequiredBal = account.getMinRequiredBalance();
+	        BigDecimal newMinBal = availableMinRequiredBal.subtract(new BigDecimal(investedAmount));
+            Long minBal = newMinBal.longValue();
+	        
+	        if(minBal>=0){
+	             account.setMinRequiredBalance(newMinBal);
+	             this.savingAccount.save(account);
+	        }  
+	        
+	    	this.repositoryWrapper.save(loanInvestment);
+	    	
+		} catch (ParseException e) {
+			// TODO Auto-generated catch blocky
+			e.printStackTrace();
+		}
+        
+        return new CommandProcessingResultBuilder().build();
+		
+	}
 }

@@ -1294,19 +1294,30 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                 LocalDate loanStart = new LocalDate(loanStartDate);
                 
                 
+                LocalDate startInvestment = new LocalDate();
+                LocalDate closeInvestment = new LocalDate();
+                
                 int dayDiff = 0;
                 if(!(investmentCloseDate == null)){
                 	if(investmentStart.isBefore(loanStart)){
                 		    dayDiff = Days.daysBetween(loanStart, investmentClose).getDays();
+                		    startInvestment = loanStart;
+                		    closeInvestment = investmentClose;
                 		}else{
                 			dayDiff = Days.daysBetween(investmentStart, investmentClose).getDays();	
+                			startInvestment = investmentStart;
+                			closeInvestment = investmentClose;
                 		}
                 	
                 }else{
                  	if(investmentStart.isBefore(loanStart)){
             	 	    dayDiff = Days.daysBetween(loanStart, loanClose).getDays();
+            	 	    startInvestment = loanStart;
+            	 	    closeInvestment = loanClose;
             		}else{
-            	 		dayDiff = Days.daysBetween(investmentStart, loanClose).getDays();	
+            	 		dayDiff = Days.daysBetween(investmentStart, loanClose).getDays();
+            	 		startInvestment = investmentStart;
+            	 		closeInvestment = loanClose;
             		}    
                 }
         		
@@ -1361,8 +1372,9 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                result = doDepositeTransaction(savingId,apiJson);
          	    
      
-        		String insertSqlStmt = "INSERT INTO `ct_posted_investment_earnings` (`loan_id`, `saving_id`, `number_of_days`, `invested_amount`,"
-        				+ " `interest_rate`, `interest_earned`, `date_of_interest_posting`) VALUES ";
+        		String insertSqlStmt = "INSERT INTO `ct_posted_investment_earnings` (`loan_id`, `saving_id`, `number_of_days`, "
+        				+ "`invested_amount`, `interest_rate`, `interest_earned`, `date_of_interest_posting`, `investment_start_date`, "
+        				+ "`investment_close_date`) VALUES ";
         		
         		dB.append("( ");
         		dB.append(loanId);
@@ -1378,6 +1390,10 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         		dB.append(transactionAmount);
         		dB.append(",'");
         		dB.append(postingDateOfInvestment);
+        		dB.append("','");
+        		dB.append(startInvestment);
+        		dB.append("','");
+        		dB.append(closeInvestment);
         		dB.append("')");
             	
                 if (dB.length() > 0) {

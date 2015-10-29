@@ -87,6 +87,21 @@ public class LoanInvestmentApiResource {
     
     
     @POST
+    @Path("/close")
+    @Consumes({MediaType.APPLICATION_JSON})
+    @Produces({MediaType.APPLICATION_JSON})
+    public String closeLoanInvestment(@PathParam("loanId") Long loanId, final String apiRequestBodyAsJson){
+		
+    	this.context.authenticatedUser().validateHasReadPermission(InvestmentConstants.LOANINVESTMENT_RESOURCE_NAME);
+    	final CommandWrapper commandRequest = new CommandWrapperBuilder().closeLoanInvestment(loanId).withJson(apiRequestBodyAsJson)
+    			.build();
+    	final CommandProcessingResult result = this.commandSourceWritePlatformService.logCommandSource(commandRequest);
+    	
+    	return this.apiJsonSerializerService.serialize(result);
+    	
+    }
+    
+    @POST
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces({MediaType.APPLICATION_JSON})
     public String addLoanInvestment(@PathParam("loanId") Long loanId, String apiJsonBody){
