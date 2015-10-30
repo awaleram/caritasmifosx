@@ -4,7 +4,7 @@ import org.mifosplatform.infrastructure.core.exception.AbstractPlatformDomainRul
 
 public class NoAnyInvestmentForGivenMaturityDateException  extends AbstractPlatformDomainRuleException{
 	public NoAnyInvestmentForGivenMaturityDateException() {
-		super("No Any Investment Earning For Given Maturity Date", "");
+		super("No Any Investment Earning Found For Given Maturity Date", "");
 		// TODO Auto-generated constructor stub
 	}
 }
