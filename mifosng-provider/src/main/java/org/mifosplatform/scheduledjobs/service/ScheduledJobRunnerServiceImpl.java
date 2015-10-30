@@ -1369,7 +1369,10 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         	
         		
         	//this method is responsible for handling the deposit amount into the specific saving account
-               result = doDepositeTransaction(savingId,apiJson);
+               if(transactionAmount.compareTo(BigDecimal.ZERO)>0){
+            	   
+               
+                result = doDepositeTransaction(savingId,apiJson);
          	    
      
         		String insertSqlStmt = "INSERT INTO `ct_posted_investment_earnings` (`loan_id`, `saving_id`, `number_of_days`, "
@@ -1400,15 +1403,15 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
                      jdbcTemplate.update(insertSqlStmt + dB.toString());
                   }        		 
 
-         	   String updateString = " update ct_investment_status cis set cis.earning_status = 'Distributed' ";
-         	   StringBuilder update = new StringBuilder();
-         	   update.append(" where cis.loan_id = ");
-         	   update.append(loanId);
-         	   if(update.length() > 0){
+         	    String updateString = " update ct_investment_status cis set cis.earning_status = 'Distributed' ";
+         	    StringBuilder update = new StringBuilder();
+         	    update.append(" where cis.loan_id = ");
+         	    update.append(loanId);
+         	    if(update.length() > 0){
          		   jdbcTemplate.update(updateString + update.toString());
-         	   }
-        	   }
-        	
+         	    }
+        	  }
+        	}
         	
           }
 	      
@@ -1483,11 +1486,13 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
 	                  
 	         		String status = earningStatus.getEarningStatus();
 	        		StringBuilder update = new StringBuilder();
-	        		if(loanStatusId == 600 && status == "Not Matured"){
+	        		if(loanStatusId == 600 && status.equalsIgnoreCase("Not Matured")){
 	        		  
 	        			update.append(" update ct_investment_status cis set cis.earning_status = ");
 	        			update.append("'Matured'");
 	        			update.append("cis.loan_id = " + loanId);
+	        			investmentId.add(loanId);
+	        		}else if(loanStatusId == 600 && status.equalsIgnoreCase("Matured")){
 	        			investmentId.add(loanId);
 	        		}
 	        		        		

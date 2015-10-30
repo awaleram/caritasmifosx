@@ -53,11 +53,21 @@ public class InvestmentBatchJobReadPlatformServiceImpl implements InvestmentBatc
            sb.append(" select ml.id as investmentId from m_investment ms ");
            sb.append(" left join m_loan ml on ms.loan_id = ml.id ");
            sb.append(" left join m_product_loan mlp on ml.product_id = mlp.id ");
+           int count = 0;
+           int temp = 0;
+           if(!(date.isEmpty()) || !(investmentId.isEmpty()) || productId != null){
+        	   sb.append(" where ");
+        	   count=1;
+           }
            if(!(date.isEmpty())){
-    	     sb.append(" where ml.maturedon_date <= ? ");
-           }/*else{
+    	     sb.append(" ml.maturedon_date <= ? ");
+    	     temp=1;
+           }
+           if(date.isEmpty() && count==0){
         	   sb.append(" where ml.maturedon_date <= curDate() "); 	   
-           }*/
+           }else if(count==1 && temp==0){
+        	   sb.append(" ml.maturedon_date <= curDate() ");
+           }
           if(!(investmentId.isEmpty())){
     	      sb.append(" and ml.account_no = ? ");
            }
