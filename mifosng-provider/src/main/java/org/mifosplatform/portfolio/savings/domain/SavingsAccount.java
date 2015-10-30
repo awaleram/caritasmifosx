@@ -261,7 +261,9 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     @Column(name = "on_hold_funds_derived", scale = 6, precision = 19, nullable = true)
     private BigDecimal onHoldFunds;
 
-    @Temporal(TemporalType.DATE)
+  
+
+	@Temporal(TemporalType.DATE)
     @Column(name = "start_interest_calculation_date")
     protected Date startInterestCalculationDate;
 
@@ -2553,4 +2555,7 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     public BigDecimal getWithdrawableBalance() {
         return getAccountBalance().subtract(minRequiredBalanceDerived(getCurrency()).getAmount());
     }
+    public void setOnHoldFunds(BigDecimal onHoldFunds) {
+  		this.onHoldFunds = onHoldFunds;
+  	}
 }

@@ -20,8 +20,10 @@ import javax.persistence.Table;
 import org.hibernate.annotations.LazyCollection;
 import org.hibernate.annotations.LazyCollectionOption;
 import org.mifosplatform.portfolio.account.domain.AccountAssociations;
+import org.mifosplatform.portfolio.account.domain.AccountAssociationsRepository;
 import org.mifosplatform.portfolio.loanaccount.domain.Loan;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccount;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -55,6 +57,7 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
     @OneToMany(cascade = CascadeType.ALL, mappedBy = "guarantorFundingDetails", orphanRemoval = true)
     private final List<GuarantorFundingTransaction> guarantorFundingTransactions = new ArrayList<>();
 
+  
     protected GuarantorFundingDetails() {}
 
     public GuarantorFundingDetails(final AccountAssociations accountAssociations, final Integer status, final BigDecimal amount) {
@@ -105,6 +108,7 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         this.amountRemaining = getAmountRemaining().subtract(amount);
         if (this.amountRemaining.compareTo(BigDecimal.ZERO) == 0) {
             this.updateStatus(GuarantorFundStatusType.COMPLETED);
+            accountAssociations.setActive(false);
         }
     }
 
@@ -113,6 +117,7 @@ public class GuarantorFundingDetails extends AbstractPersistable<Long> {
         this.amountRemaining = getAmountRemaining().add(amount);
         if (getStatus().isCompleted() && this.amountRemaining.compareTo(BigDecimal.ZERO) == 1) {
             this.updateStatus(GuarantorFundStatusType.ACTIVE);
+            accountAssociations.setActive(true);
         }
     }
 

@@ -17,5 +17,8 @@ public interface GuarantorFundingTransactionRepository extends JpaRepository<Gua
 
     @Query("from GuarantorFundingTransaction ft where ft.loanTransaction.id in (:loanTransactions)")
     List<GuarantorFundingTransaction> fetchGuarantorFundingTransactions(@Param("loanTransactions") List<Long> loanTransactions);
+    
+    @Query("from GuarantorFundingTransaction ft where ft.depositAccountOnHoldTransaction.id in (:onHoldTransactionId)")
+    List<GuarantorFundingTransaction> fetchGuarantorFundingTransactionsForSavingAccount(@Param("onHoldTransactionId") List<Long> onHoldTransactionId);
 
 }

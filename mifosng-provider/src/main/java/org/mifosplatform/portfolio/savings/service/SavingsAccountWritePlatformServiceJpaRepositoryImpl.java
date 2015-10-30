@@ -58,6 +58,8 @@ import org.mifosplatform.portfolio.client.domain.Client;
 import org.mifosplatform.portfolio.client.exception.ClientNotActiveException;
 import org.mifosplatform.portfolio.group.domain.Group;
 import org.mifosplatform.portfolio.group.exception.GroupNotActiveException;
+import org.mifosplatform.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransaction;
+import org.mifosplatform.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransactionRepository;
 import org.mifosplatform.portfolio.note.domain.Note;
 import org.mifosplatform.portfolio.note.domain.NoteRepository;
 import org.mifosplatform.portfolio.paymentdetail.domain.PaymentDetail;
@@ -115,6 +117,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
     private final HolidayWritePlatformService holidayWritePlatformService;
     private final WorkingDaysWritePlatformService workingDaysWritePlatformService;
     private final ConfigurationDomainService configurationDomainService;
+    private final GuarantorFundingTransactionRepository guarantorFundingTransactionRepository;
 
     @Autowired
     public SavingsAccountWritePlatformServiceJpaRepositoryImpl(final PlatformSecurityContext context,
@@ -133,7 +136,8 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
             final HolidayWritePlatformService holidayWritePlatformService,
             final WorkingDaysWritePlatformService workingDaysWritePlatformService,
             final SavingsAccountDataValidator fromApiJsonDeserializer, final SavingsAccountRepositoryWrapper savingsRepository,
-            final StaffRepositoryWrapper staffRepository, final ConfigurationDomainService configurationDomainService) {
+            final StaffRepositoryWrapper staffRepository, final ConfigurationDomainService configurationDomainService,
+            final GuarantorFundingTransactionRepository guarantorFundingTransactionRepository) {
         this.context = context;
         this.savingAccountRepository = savingAccountRepository;
         this.savingsAccountTransactionRepository = savingsAccountTransactionRepository;
@@ -155,6 +159,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         this.savingsRepository = savingsRepository;
         this.staffRepository = staffRepository;
         this.configurationDomainService = configurationDomainService;
+        this.guarantorFundingTransactionRepository = guarantorFundingTransactionRepository;
     }
 
     @Transactional
@@ -455,7 +460,19 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
         account.validateAccountBalanceDoesNotBecomeNegative(SavingsApiConstants.undoTransactionAction);
         account.activateAccountBasedOnBalance();
         postJournalEntries(account, existingTransactionIds, existingReversedTransactionIds);
-
+       
+        final boolean isLinkedWithAnyActiveLoan = this.accountAssociationsReadPlatformService.isLinkedWithAnyActiveAccount(savingsId);
+        if(isLinkedWithAnyActiveLoan){
+        	BigDecimal onHoldAmmount = account.getOnHoldFunds();
+        	BigDecimal transactionAmmount = savingsAccountTransaction.getAmount();  	
+        	BigDecimal newOnHoldAmmount = onHoldAmmount.subtract(transactionAmmount);
+        	account.setOnHoldFunds(newOnHoldAmmount);
+        	List<Long> savingTransactionIds = new ArrayList<Long>();
+        	savingTransactionIds.add(transactionId);
+        	reverseTransaction(savingTransactionIds);
+        	this.savingAccountRepository.save(account);
+          }
+        
         return new CommandProcessingResultBuilder() //
                 .withEntityId(savingsId) //
                 .withOfficeId(account.officeId()) //
@@ -465,6 +482,19 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
                 .build();
     }
 
+    
+    private void reverseTransaction(final List<Long> savingTransactionIds) {
+
+        List<GuarantorFundingTransaction> fundingTransactions = this.guarantorFundingTransactionRepository
+                .fetchGuarantorFundingTransactionsForSavingAccount(savingTransactionIds);
+        for (GuarantorFundingTransaction fundingTransaction : fundingTransactions) {
+            fundingTransaction.reverseTransaction();
+        }
+        if (!fundingTransactions.isEmpty()) {
+            this.guarantorFundingTransactionRepository.save(fundingTransactions);
+        }
+    }
+    
     @Override
     public CommandProcessingResult adjustSavingsTransaction(final Long savingsId, final Long transactionId, final JsonCommand command) {
 

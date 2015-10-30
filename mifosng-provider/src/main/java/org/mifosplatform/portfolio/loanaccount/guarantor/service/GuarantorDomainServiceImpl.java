@@ -476,6 +476,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             if (fundingDetails.getAmountRemaining().compareTo(guarantorAmount) < 1) {
                 guarantorAmount = fundingDetails.getAmountRemaining();
             }
+           
             fundingDetails.releaseFunds(guarantorAmount);
             SavingsAccount savingsAccount = fundingDetails.getLinkedSavingsAccount();
             savingsAccount.releaseFunds(guarantorAmount);

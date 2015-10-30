@@ -95,19 +95,21 @@ public class AccountAssociationsReadPlatformServiceImpl implements AccountAssoci
 
         final List<Map<String, Object>> statusList = this.jdbcTemplate.queryForList(sql1, savingsId);
         for (final Map<String, Object> statusMap : statusList) {
-            AccountAssociationType associationType = AccountAssociationType.fromInt((Integer) statusMap.get("type"));
-            if (!associationType.isLinkedAccountAssociation() && (Boolean) statusMap.get("active")) {
+        		
+        	 if((Boolean)statusMap.get("active")==true){
+              AccountAssociationType associationType = AccountAssociationType.fromInt((Integer) statusMap.get("type"));
+             if (!associationType.isLinkedAccountAssociation() && (Boolean) statusMap.get("active")==true) {
                 hasActiveAccount = true;
                 break;
-            }
+             }
 
-            if (statusMap.get("loanStatus") != null) {
+             if (statusMap.get("loanStatus") != null) {
                 final LoanStatus loanStatus = LoanStatus.fromInt((Integer) statusMap.get("loanStatus"));
                 if (loanStatus.isActiveOrAwaitingApprovalOrDisbursal() || loanStatus.isUnderTransfer()) {
                     hasActiveAccount = true;
                     break;
                 }
-            }
+              }
 
             if (statusMap.get("savingsStatus") != null) {
                 final SavingsAccountStatusType saveStatus = SavingsAccountStatusType.fromInt((Integer) statusMap.get("savingsStatus"));
@@ -115,9 +117,10 @@ public class AccountAssociationsReadPlatformServiceImpl implements AccountAssoci
                     hasActiveAccount = true;
                     break;
                 }
-            }
+              }
+           
+          }
         }
-
         return hasActiveAccount;
     }
 
