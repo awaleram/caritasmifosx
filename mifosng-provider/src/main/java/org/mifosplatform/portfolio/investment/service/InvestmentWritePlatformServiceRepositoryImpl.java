@@ -424,7 +424,7 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         Long oldLoanId = command.longValueOfParameterNamed("oldLoanId");
         SavingsAccount account = this.savingAccount.findOne(savingsAccountId);
         BigDecimal availableMinRequiredBal = account.getMinRequiredBalance();
-        
+      
         
         id = this.savingInvestment.retriveSavingInvestmentId(savingsAccountId, oldLoanId, null);
         Investment savingInvestment = this.repositoryWrapper.findWithNotFoundDetection(id);
@@ -579,7 +579,7 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         Long id = 0L;
         String startDate = command.stringValueOfParameterNamed("startDate");
         Long loanId = command.longValueOfParameterNamed("loanId");
-        id = this.savingInvestment.retriveSavingInvestmentId(savingId, loanId, startDate);
+        id = this.savingInvestment.retriveSavingInvestmentIdForClose(savingId, loanId, startDate);
 
         Investment savingInvestment = this.repositoryWrapper.findWithNotFoundDetection(id);
         Long investedAmount = savingInvestment.getInvestedAmount();
@@ -626,6 +626,7 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         DateFormat formateDate = new SimpleDateFormat("dd MMMM yyyy", Locale.ENGLISH);
             	
         try {
+        
         	
         	
         	Date closedDate = formateDate.parse(closeDate);

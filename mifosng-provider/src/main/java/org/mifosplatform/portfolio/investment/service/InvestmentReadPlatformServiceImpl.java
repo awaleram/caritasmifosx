@@ -69,8 +69,25 @@ public class InvestmentReadPlatformServiceImpl implements
 		return data;
 		}catch(Exception e){
 			
-	    	throw new InvestmentAlreadyClosedException();	   
+	    	throw new InvestmentIsNotClosedException();	   
 		}
+	}
+	
+	
+	@Override
+	public Long retriveSavingInvestmentIdForClose(Long savingId, Long loanId,
+			String startDate) {
+		try{
+		final String schema = "select ms.id from m_investment ms "
+				+ " where ms.saving_id = " + savingId + " and ms.loan_id = " + loanId +
+				" and ms.start_date = '" + startDate + "'"
+		        + " and ms.close_date is not null ";
+		Long data =  this.jdbcTemplate.queryForLong(schema);
+		return data;
+		}catch(Exception e){
+			throw new InvestmentIsNotClosedException();
+		}
+
 	}
 
 	@Override
@@ -185,9 +202,10 @@ public class InvestmentReadPlatformServiceImpl implements
 
 		public String loanAccountSchema() {
 
-			return "msi.saving_id as saving_id,mp.id as group_id , mp.display_name as name, "
+			return    "msi.saving_id as saving_id,mp.id as group_id , mp.display_name as name, "
 					+ " msp.name as productname, msa.account_no as accountno, msa.account_balance_derived as savingammount,"
 					+ " msi.start_date as startDate, "
+					+ " msi.close_date as closeDate, "
 					+ " msi.invested_amount as investedamount  from m_investment msi "
 					+ " left join m_savings_account msa on msi.saving_id = msa.id "
 					+ " left join m_savings_product msp on msa.product_id = msp.id left join m_group mp on msa.group_id = mp.id";
@@ -205,14 +223,16 @@ public class InvestmentReadPlatformServiceImpl implements
 			final String productname = rs.getString("productname");
 			final Long investedAmount = rs.getLong("investedamount");
 			final Date startDate = rs.getDate("startDate");
-
+            final Date closeDate = rs.getDate("closeDate");
 			final LoanInvestmentData data = LoanInvestmentData.intance(
 					saving_id,group_id, name, accountno, savingammount, productname,
-					investedAmount, startDate);
+					investedAmount, startDate, closeDate);
 
 			return data;
 		}
 
 	}
+
+	
 
 }

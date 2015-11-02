@@ -13,8 +13,9 @@ public class LoanInvestmentData {
     final String productname;
     final Long investedAmount;
     final Date startDate;
+    final Date closeDate;
     public LoanInvestmentData(Long saving_id,Long group_id, String name, String accountno, 
-    		Long savingamount, String productname, Long investedAmount, Date startDate) {
+    		Long savingamount, String productname, Long investedAmount, Date startDate, Date closeDate) {
         super();
         this.saving_id = saving_id;
         this.name = name;
@@ -24,6 +25,7 @@ public class LoanInvestmentData {
         this.investedAmount = investedAmount;
         this.group_id = group_id;
         this.startDate = startDate;
+        this.closeDate = closeDate;
     }
     
     public Long getGroup_id() {
@@ -55,7 +57,7 @@ public class LoanInvestmentData {
 	}
 
 	public static LoanInvestmentData intance (Long saving_id,Long group_id, String name, String accountno, Long savingamount,
-            String productname, Long investedAmount, Date startDate){
-        return new LoanInvestmentData(saving_id,group_id, name, accountno, savingamount, productname, investedAmount, startDate);
+            String productname, Long investedAmount, Date startDate, Date closeDate){
+        return new LoanInvestmentData(saving_id,group_id, name, accountno, savingamount, productname, investedAmount, startDate, closeDate);
     }
 }
