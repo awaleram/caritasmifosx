@@ -264,7 +264,7 @@ public final class ClientDataValidator {
         if(this.fromApiJsonHelper.parameterExists(ClientApiConstants.nationalId, element)){
         	atLeastOneParameterPassedForUpdate = true ;
         	final String nationalId = this.fromApiJsonHelper.extractStringNamed(ClientApiConstants.nationalId, element);
-        	baseDataValidator.reset().parameter(ClientApiConstants.nationalId).value(nationalId).notBlank().notExceedingLengthOf(50);
+        	baseDataValidator.reset().parameter(ClientApiConstants.nationalId).value(nationalId).notExceedingLengthOf(50);
         }
 
         if (isFullnameProvided(element) || isIndividualNameProvided(element)) {
