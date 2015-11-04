@@ -1376,8 +1376,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
          	    
      
         		String insertSqlStmt = "INSERT INTO `ct_posted_investment_earnings` (`loan_id`, `saving_id`, `number_of_days`, "
-        				+ "`invested_amount`, `interest_rate`, `interest_earned`, `date_of_interest_posting`, `investment_start_date`, "
-        				+ "`investment_close_date`) VALUES ";
+        				+ " `invested_amount`, `gorup_interest_rate`, `gorup_interest_earned`, `interest_earned`, `date_of_interest_posting`, "
+        				+ "`investment_start_date`, `investment_close_date`) VALUES ";
         		
         		dB.append("( ");
         		dB.append(loanId);
@@ -1391,6 +1391,8 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         		dB.append(groupPercentage);
         		dB.append(",");
         		dB.append(transactionAmount);
+        		dB.append(",");
+        		dB.append(interestEarn);
         		dB.append(",'");
         		dB.append(postingDateOfInvestment);
         		dB.append("','");

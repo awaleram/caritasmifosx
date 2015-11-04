@@ -19,6 +19,9 @@ public interface InvestmentReadPlatformService {
     Long retriveLoanInvestmentId(final Long loanId, Long svingId, String startDate);
     List<Long> retriveSavingIdByLoanId(final Long loanId);
     
-    Long retriveSavingInvestmentIdForClose(final Long savingId, Long loanId, String startDate);
+    Integer retriveSavingInvestmentIdForClose(final Long savingId, Long loanId, String startDate);
+    Long retriveSavingInvestmentIdForUpdate(final Long savingId, Long loanId, String startDate);
+    
+    Long retriveLoanInvestmentIdForUpdate(final Long loanId, Long savingId, String startDate);
     
 }

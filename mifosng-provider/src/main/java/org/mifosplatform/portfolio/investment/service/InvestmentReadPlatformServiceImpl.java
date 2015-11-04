@@ -64,25 +64,44 @@ public class InvestmentReadPlatformServiceImpl implements
 				" and ms.start_date = '" + startDate + "'"
 		        + " and ms.close_date is null ";
 
-		Long data = this.jdbcTemplate.queryForLong(schema);
+		Integer data = this.jdbcTemplate.queryForObject(schema,new Object[]{}, Integer.class);
 
-		return data;
+		Long resultData = new Long(data);
+		return resultData;
+		
+		
 		}catch(Exception e){
 			
 	    	throw new InvestmentIsNotClosedException();	   
 		}
 	}
 	
+	@Override
+	public Long retriveSavingInvestmentIdForUpdate(Long savingId, Long loanId, String startDate){
+		try{
+			final String schema = "select ms.id from m_investment ms"
+					+ " where ms.saving_id = " + savingId + " and ms.loan_id = " + loanId +
+					" and ms.start_date = '" + startDate + "'"
+					+ " and ms.close_date is null ";
+			Integer data = this.jdbcTemplate.queryForObject(schema, new Object[]{}, Integer.class);
+			
+			Long resultData = new Long(data);					
+			return resultData;
+		}catch(Exception e){
+			throw new InvestmentAlreadyClosedException();	  
+		}
+		
+	}
 	
 	@Override
-	public Long retriveSavingInvestmentIdForClose(Long savingId, Long loanId,
+	public Integer retriveSavingInvestmentIdForClose(Long savingId, Long loanId,
 			String startDate) {
 		try{
 		final String schema = "select ms.id from m_investment ms "
-				+ " where ms.saving_id = " + savingId + " and ms.loan_id = " + loanId +
-				" and ms.start_date = '" + startDate + "'"
+				+ " where ms.saving_id = " + savingId + " and ms.loan_id = " + loanId
+				+ " and ms.start_date = '" + startDate + "'"
 		        + " and ms.close_date is not null ";
-		Long data =  this.jdbcTemplate.queryForLong(schema);
+		Integer data =  this.jdbcTemplate.queryForObject(schema,new Object[]{},Integer.class);
 		return data;
 		}catch(Exception e){
 			throw new InvestmentIsNotClosedException();
@@ -100,12 +119,36 @@ public class InvestmentReadPlatformServiceImpl implements
 				" and ms.start_date = '" + startDate + "'"
 		        + " and ms.close_date is not null ";;
 
-		Long data = this.jdbcTemplate.queryForLong(schema);
-		return data;
+		Integer  data = this.jdbcTemplate.queryForObject(schema, new Object[]{}, Integer.class);
+		Long resultData = new Long(data);
+		return resultData;
 		}catch(Exception e){
 			throw new InvestmentIsNotClosedException();
 		}
 
+	}
+	
+	
+	@Override
+	public Long retriveLoanInvestmentIdForUpdate(Long loanId, Long savingId, String startDate){
+		
+		try{
+			
+			final String schema = "select ms.id from m_investment ms "
+					+ " where ms.loan_id = " + loanId + " and ms.saving_id = "
+					+ savingId +
+					" and ms.start_date = '" + startDate + "'"
+			        + " and ms.close_date is null ";;
+
+			Integer  data = this.jdbcTemplate.queryForObject(schema, new Object[]{}, Integer.class);
+			Long resultData = new Long(data);
+			
+			return resultData;
+			
+		}catch(Exception e){
+			throw new InvestmentAlreadyClosedException();	
+		}
+		
 	}
 
 	@Override

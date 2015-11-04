@@ -422,11 +422,12 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         Long ammount = command.longValueOfParameterNamed("investedAmounts");
         Long oldAmount = command.longValueOfParameterNamed("oldAmount");
         Long oldLoanId = command.longValueOfParameterNamed("oldLoanId");
+        String investmentStartDate = command.stringValueOfParameterNamed("startDate");
         SavingsAccount account = this.savingAccount.findOne(savingsAccountId);
         BigDecimal availableMinRequiredBal = account.getMinRequiredBalance();
       
         
-        id = this.savingInvestment.retriveSavingInvestmentId(savingsAccountId, oldLoanId, null);
+        id = this.savingInvestment.retriveSavingInvestmentIdForUpdate(savingsAccountId, oldLoanId,investmentStartDate);
         Investment savingInvestment = this.repositoryWrapper.findWithNotFoundDetection(id);
         Long availableInvestedAmount = savingInvestment.getInvestedAmount();
          
@@ -515,7 +516,7 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
         
         String startDate = command.stringValueOfParameterNamed("startDate");
         
-        id = this.savingInvestment.retriveLoanInvestmentId(loanId,oldSavingId,startDate);
+        id = this.savingInvestment.retriveLoanInvestmentIdForUpdate(loanId,oldSavingId,startDate);
          Investment loanInvestment = this.repositoryWrapper.findWithNotFoundDetection(id);
          
          
@@ -576,12 +577,13 @@ public class InvestmentWritePlatformServiceRepositoryImpl implements InvestmentW
     @Override
     public CommandProcessingResult deleteSavingInvestment(Long savingId, JsonCommand command) {
 
-        Long id = 0L;
+        int id;
+        Long idAsLongValue = 0L;
         String startDate = command.stringValueOfParameterNamed("startDate");
         Long loanId = command.longValueOfParameterNamed("loanId");
         id = this.savingInvestment.retriveSavingInvestmentIdForClose(savingId, loanId, startDate);
-
-        Investment savingInvestment = this.repositoryWrapper.findWithNotFoundDetection(id);
+        idAsLongValue = new Long(id);
+        Investment savingInvestment = this.repositoryWrapper.findWithNotFoundDetection(idAsLongValue);
         Long investedAmount = savingInvestment.getInvestedAmount();
         
         SavingsAccount account = this.savingAccount.findOne(savingId);
