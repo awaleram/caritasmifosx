@@ -1375,8 +1375,24 @@ public class ScheduledJobRunnerServiceImpl implements ScheduledJobRunnerService 
         		BigDecimal interestEarnAmountAfterChagreDeduction = totalInterestEarnFromIvestment.subtract(chargeAmountOfGroup);
         		
         		BigDecimal groupInterestEarn = interestEarnAmountAfterChagreDeduction.multiply((groupPercentage.divide(bigDecimalHundred))).setScale(05, RoundingMode.HALF_EVEN);
-        		BigDecimal caritasInterestEarn = interestEarnAmountAfterChagreDeduction.multiply((caritasPercentage.divide(bigDecimalHundred)).setScale(05,RoundingMode.HALF_EVEN));
-        		        		
+        		BigDecimal caritasInterestEarn = BigDecimal.ZERO; 
+        		       
+        		caritasInterestEarn = interestEarnAmountAfterChagreDeduction.multiply((caritasPercentage.divide(bigDecimalHundred)).setScale(05,RoundingMode.HALF_EVEN));
+        	
+        		//following code run if group invested money for limited time e.g total investment is 91 days and group investment for 45 days.
+        		if(!(numberOfDaysOfInvestment.equals(totalNumberOfInvestment))){
+        	    	BigDecimal cariatasInterestEarnInInvestment = caritasInterestEarn;
+        	    	BigDecimal caritasInterestForRemainingDays = BigDecimal.ZERO;
+        	    	caritasInterestEarn = BigDecimal.ZERO;
+        			BigDecimal oneDayInterest = totalInterestEarnFromIvestment.divide(numberOfDaysOfInvestment,10,RoundingMode.HALF_EVEN).setScale(05, RoundingMode.HALF_EVEN);
+        			BigDecimal numberOfDayDiffInInvestment = totalNumberOfInvestment.subtract(numberOfDaysOfInvestment).setScale(05, RoundingMode.HALF_EVEN);
+        			caritasInterestForRemainingDays = oneDayInterest.multiply(numberOfDayDiffInInvestment).setScale(05, RoundingMode.HALF_EVEN);
+        		   
+        			caritasInterestEarn = caritasInterestForRemainingDays.add(cariatasInterestEarnInInvestment).setScale(05,RoundingMode.HALF_EVEN);
+        	    
+        	    }
+        		
+        		
         		BigDecimal transactionAmount = groupInterestEarn;
         		
         		
