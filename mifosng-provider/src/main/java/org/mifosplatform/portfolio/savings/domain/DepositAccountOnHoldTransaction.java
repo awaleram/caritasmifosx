@@ -18,6 +18,7 @@ import javax.persistence.Table;
 import javax.persistence.Temporal;
 import javax.persistence.TemporalType;
 
+import org.aspectj.weaver.patterns.ThisOrTargetAnnotationPointcut;
 import org.joda.time.LocalDate;
 import org.mifosplatform.portfolio.loanaccount.guarantor.domain.GuarantorFundingTransaction;
 import org.mifosplatform.portfolio.savings.DepositAccountOnHoldTransactionType;
@@ -76,12 +77,28 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
         return new DepositAccountOnHoldTransaction(savingsAccount, amount, DepositAccountOnHoldTransactionType.RELEASE, transactionDate,
                 reversed);
     }
-
+    
+  /*  //following code change for undo the on hold amount if undo deposit transaction happens
+    public static DepositAccountOnHoldTransaction undoHold(final SavingsAccount savingsAccount, final BigDecimal amount,
+    		final LocalDate transactionDate ){
+    	boolean reversed = true;
+       	savingsAccount.releaseFunds(amount);
+     DepositAccountOnHoldTransaction(savingsAccount,amount,DepositAccountOnHoldTransactionType.HOLD, transactionDate, reversed);
+    }
+*/
     public BigDecimal getAmount() {
         return this.amount;
     }
 
-    public void reverseTransaction() {
+    public boolean isReversed() {
+		return this.reversed;
+	}
+
+	public void setReversed(boolean reversed) {
+		this.reversed = reversed;
+	}
+
+	public void reverseTransaction() {
         this.reversed = true;
         if (this.getTransactionType().isHold()) {
             this.savingsAccount.releaseFunds(this.amount);
@@ -95,4 +112,13 @@ public class DepositAccountOnHoldTransaction extends AbstractPersistable<Long> {
 
     }
 
+    public void reverseTxnIfUndoDepositTxn(BigDecimal releaseAmount){
+    	this.reversed = true;
+    	//following if self saving account undo deposit then other guarantor has to be undo release and onhond has to be increase
+    	this.savingsAccount.undoOnHoldAmountIfDepositTxnUndo(releaseAmount);
+    }
+    
+   
+ 
+    
 }

@@ -47,6 +47,7 @@ import org.mifosplatform.portfolio.paymentdetail.domain.PaymentDetail;
 import org.mifosplatform.portfolio.savings.domain.DepositAccountOnHoldTransaction;
 import org.mifosplatform.portfolio.savings.domain.DepositAccountOnHoldTransactionRepository;
 import org.mifosplatform.portfolio.savings.domain.SavingsAccount;
+import org.mifosplatform.portfolio.savings.domain.SavingsAccountTransaction;
 import org.mifosplatform.portfolio.savings.exception.InsufficientAccountBalanceException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.jpa.domain.AbstractPersistable;
@@ -93,6 +94,8 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_WRITTEN_OFF, new ReleaseAllFunds());
         this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.LOAN_UNDO_WRITTEN_OFF,
                 new ReverseFundsOnBusinessEvent());
+        this.businessEventNotifierService.addBusinessEventPostListners(BUSINESS_EVENTS.SAVINGS_UNDO_TRANSACTION,
+        		new UndoReleaseFundIfUndoDeposit());
     }
 
     @Override
@@ -169,7 +172,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.hold(savingsAccount,
                     guarantorFundingDetails.getAmount(), transactionDate);
             GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails, null,
-                    onHoldTransaction);
+                    onHoldTransaction,null);
             guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
             this.depositAccountOnHoldTransactionRepository.save(onHoldTransaction);
         }
@@ -188,7 +191,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             DepositAccountOnHoldTransaction onHoldTransaction = DepositAccountOnHoldTransaction.release(savingsAccount, amoutForWithdraw,
                     transactionDate);
             GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails, null,
-                    onHoldTransaction);
+                    onHoldTransaction,null);
             guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
             guarantorFundingDetails.releaseFunds(amoutForWithdraw);
             guarantorFundingDetails.withdrawFunds(amoutForWithdraw);
@@ -366,7 +369,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
                                 guarantorFundingDetails.getAmount(), loan.getApprovedOnDate());
                         onHoldTransactions.add(onHoldTransaction);
                         GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails,
-                                null, onHoldTransaction);
+                                null, onHoldTransaction,null);
                         guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
                         guarantorFundingDetailList.add(guarantorFundingDetails);
                         if (savingsAccount.getWithdrawableBalance().compareTo(BigDecimal.ZERO) == -1) {
@@ -469,7 +472,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
                                 amoutForRelease, loanTransaction.getTransactionDate());
                         onHoldTransactions.add(onHoldTransaction);
                         GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(guarantorFundingDetails,
-                                loanTransaction, onHoldTransaction);
+                                loanTransaction, onHoldTransaction,null);
                         guarantorFundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
                         guarantorFundingDetails.releaseFunds(amoutForRelease);
                         saveGuarantorFundingDetails.add(guarantorFundingDetails);
@@ -523,7 +526,7 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
                     loanTransaction.getTransactionDate());
             accountOnHoldTransactions.add(onHoldTransaction);
             GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(fundingDetails, loanTransaction,
-                    onHoldTransaction);
+                    onHoldTransaction,null);
             fundingDetails.addGuarantorFundingTransactions(guarantorFundingTransaction);
             amountLeft = amountLeft.subtract(guarantorAmount);
         }
@@ -546,6 +549,28 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
         }
     }
 
+    
+    /**
+     * 
+     * Foll0woing method reverse the fund release transactions in case of deposit transaction revered
+     *
+     */
+    
+    private void reverseTransactionIfDepositUndoTxn(final List<Long> savingsTransactionIds){
+    	List<GuarantorFundingTransaction> fundingTransactions = this.guarantorFundingTransactionRepository
+    			.fetchGuarantorFundingTransactionsForSavingsTxnId(savingsTransactionIds);
+    	
+    	for(GuarantorFundingTransaction fundingTransaction : fundingTransactions){
+    		fundingTransaction.reverseTransactionIfDepositUndoTxn();
+    	}
+    	
+    	if(!fundingTransactions.isEmpty()){
+    		this.guarantorFundingTransactionRepository.save(fundingTransactions);
+    	}
+    
+    }
+    
+    
     private class ValidateOnBusinessEvent implements BusinessEventListner {
 
         @Override
@@ -775,6 +800,50 @@ public class GuarantorDomainServiceImpl implements GuarantorDomainService {
             // TODO Auto-generated method stub
             
         }
+    }
+    
+    
+    
+    //following change for undo deposit transaction need to undo release gurantor
+    
+    private class UndoReleaseFundIfUndoDeposit implements BusinessEventListner{
+
+		@Override
+		public void businessEventToBeExecuted(
+				Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void businessEventWasExecuted(
+				Map<BUSINESS_ENTITY, Object> businessEventEntity) {
+			// TODO Auto-generated method stub
+			
+			  Object savingTransactionEntity = businessEventEntity.get(BUSINESS_ENTITY.SAVINGS_TRANSACTION);
+	            if(savingTransactionEntity != null && savingTransactionEntity instanceof SavingsAccountTransaction){
+	            	SavingsAccountTransaction savingTransaction = (SavingsAccountTransaction) savingTransactionEntity; 
+	            	List<Long> reversedTransactions = new ArrayList<>(1);
+	            	reversedTransactions.add(savingTransaction.getId());
+	            	reverseTransactionIfDepositUndoTxn(reversedTransactions);
+	            }
+	            
+		}
+
+		@Override
+		public void businessEventToBeExecuted(
+				AbstractPersistable<Long> businessEventEntity) {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void businessEventWasExecuted(
+				AbstractPersistable<Long> businessEventEntity) {
+			// TODO Auto-generated method stub
+			
+		}
+    	
     }
 
 }

@@ -111,7 +111,7 @@ import com.google.gson.JsonArray;
 @DiscriminatorValue("100")
 public class SavingsAccount extends AbstractPersistable<Long> {
 
-    @Version
+	@Version
     int version;
 
     @Column(name = "account_no", length = 20, unique = true, nullable = false)
@@ -2618,6 +2618,12 @@ public class SavingsAccount extends AbstractPersistable<Long> {
   		this.minRequiredBalance = minRequiredBalance;
   	}
   	
+  	//following code change for undoing the on-hold amount if deposit txn undo
+  	public void undoOnHoldAmountIfDepositTxnUndo(BigDecimal undoTxnAmount){
+  		BigDecimal totalOnHoldAmount = this.onHoldFunds;
+  		this.onHoldFunds = totalOnHoldAmount.add(undoTxnAmount);
+  	}
+  	
   	
   //following code change for making transaction type Earning from investment
     public SavingsAccountTransaction earningFromInvestment(final SavingsAccountTransactionDTO transactionDTO){
@@ -2671,5 +2677,10 @@ public class SavingsAccount extends AbstractPersistable<Long> {
          return transaction;
     	
     }
+    public void setOnHoldFunds(BigDecimal onHoldFunds) {
+  		this.onHoldFunds = onHoldFunds;
+  	}
+
+
   	
 }

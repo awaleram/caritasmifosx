@@ -10,6 +10,7 @@ import java.math.MathContext;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,9 @@ import org.mifosplatform.infrastructure.security.service.PlatformSecurityContext
 import org.mifosplatform.organisation.monetary.domain.ApplicationCurrency;
 import org.mifosplatform.organisation.monetary.domain.ApplicationCurrencyRepositoryWrapper;
 import org.mifosplatform.organisation.monetary.domain.MonetaryCurrency;
+import org.mifosplatform.portfolio.common.BusinessEventNotificationConstants.BUSINESS_ENTITY;
+import org.mifosplatform.portfolio.common.BusinessEventNotificationConstants.BUSINESS_EVENTS;
+import org.mifosplatform.portfolio.common.service.BusinessEventNotifierService;
 import org.mifosplatform.portfolio.loanaccount.domain.Loan;
 import org.mifosplatform.portfolio.loanaccount.guarantor.domain.Guarantor;
 import org.mifosplatform.portfolio.loanaccount.guarantor.domain.GuarantorFundingDetails;
@@ -60,6 +64,7 @@ public class SavingsAccountDomainServiceJpa implements
 	private final DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository;
 	private final GuarantorFundingRepository guarantorFundingRepository;
 	private final SavingsAccountReadPlatformService savingsAccountReadPlatformService;
+	private final BusinessEventNotifierService businessEventNotifierService;
 
 	@Autowired
 	public SavingsAccountDomainServiceJpa(
@@ -74,7 +79,8 @@ public class SavingsAccountDomainServiceJpa implements
 			GuarantorRepository guarantorRepository,
 			DepositAccountOnHoldTransactionRepository depositAccountOnHoldTransactionRepository,
 			GuarantorFundingRepository guarantorFundingRepository,
-			SavingsAccountReadPlatformService savingsAccountReadPlatformService) {
+			SavingsAccountReadPlatformService savingsAccountReadPlatformService,
+			BusinessEventNotifierService businessEventNotifierService) {
 		super();
 		this.context = context;
 		this.savingsAccountRepository = savingsAccountRepository;
@@ -88,6 +94,7 @@ public class SavingsAccountDomainServiceJpa implements
 		this.depositAccountOnHoldTransactionRepository = depositAccountOnHoldTransactionRepository;
 		this.guarantorFundingRepository = guarantorFundingRepository;
 		this.savingsAccountReadPlatformService = savingsAccountReadPlatformService;
+		this.businessEventNotifierService = businessEventNotifierService;
 	}
 
 	@Transactional
@@ -208,6 +215,8 @@ public class SavingsAccountDomainServiceJpa implements
 
 		postJournalEntries(account, existingTransactionIds,
 				existingReversedTransactionIds, isAccountTransfer);
+		
+		this.savingsAccountRepository.save(account);
 
 	//	Long clientId = account.clientId();
 		Long savingId = account.getId();
@@ -323,7 +332,7 @@ public class SavingsAccountDomainServiceJpa implements
 											.add(onHoldTransaction);
 									GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(
 											guarantorFundingDetails, null,
-											onHoldTransaction);
+											onHoldTransaction, deposit);
 									guarantorFundingDetails
 											.addGuarantorFundingTransactions(guarantorFundingTransaction);
 								}
@@ -392,7 +401,7 @@ public class SavingsAccountDomainServiceJpa implements
 		}		
 
 	  	
-		this.savingsAccountRepository.save(account);
+		
 		return deposit;
 	}
 
@@ -411,6 +420,7 @@ public class SavingsAccountDomainServiceJpa implements
 			SavingsAccountTransaction deposite,
 			final List<DepositAccountOnHoldTransaction> accountOnHoldTransactions) {
 		BigDecimal amountLeft = amountForRelease;
+
 		for (GuarantorFundingDetails fundingDetails : guarantorList) {
 			BigDecimal guarantorAmount = amountForRelease.multiply(
 					fundingDetails.getAmountRemaining()).divide(
@@ -427,7 +437,7 @@ public class SavingsAccountDomainServiceJpa implements
 							deposite.transactionLocalDate());
 			accountOnHoldTransactions.add(onHoldTransaction);
 			GuarantorFundingTransaction guarantorFundingTransaction = new GuarantorFundingTransaction(
-					fundingDetails, null, onHoldTransaction);
+					fundingDetails, null, onHoldTransaction,deposite);
 			fundingDetails
 					.addGuarantorFundingTransactions(guarantorFundingTransaction);
 			amountLeft = amountLeft.subtract(guarantorAmount);
@@ -476,5 +486,99 @@ public class SavingsAccountDomainServiceJpa implements
 		postJournalEntries(account, existingTransactionIds,
 				existingReversedTransactionIds, isAccountTransfer);
 	}
+
+	@Override
+	public void handleUndoTransaction(
+			SavingsAccount account, SavingsAccountTransaction transactionDetail) {
+		// TODO Auto-generated method stub
+		
+		Long savingId = account.getId();
+		Long txnId = transactionDetail.getId();
+		BigDecimal onHoldAmount = account.getOnHoldFunds();
+		BigDecimal newOnHoldAmount = BigDecimal.ZERO;
+		BigDecimal undoTransactionAmount = transactionDetail.getAmount();
+		LocalDate txnDate = transactionDetail.transactionLocalDate();
+		boolean isReversed = true; // this for reverse onhold amount.
+		boolean allowReversedOnHoldTxn = false; //if self guarantee txn found any txn in onhold then allow to release other else not.
+		
+		if(onHoldAmount.compareTo(BigDecimal.ZERO)>0){
+			newOnHoldAmount = onHoldAmount.subtract(undoTransactionAmount);
+		}
+		
+		long isReleaseGuarantor = this.savingsAccountReadPlatformService
+				.getIsReleaseGuarantor(savingId);
+		
+		List<Long> totalLoanId = null;  // list of loan id is for to get total loan account associated for this self guarantee
+		Long loanId = null;
+		if(isReleaseGuarantor == 1){
+			totalLoanId = this.loanReadPlatformService
+					.retriveLoanAccountId(savingId);
+			if(!totalLoanId.isEmpty()){
+			   loanId = totalLoanId.get(0);
+			}
+		}
+		
+		if (!(loanId == null) && isReleaseGuarantor == 1) {
+			
+			final Loan loan = this.loanAssembler.assembleFrom(loanId);
+			if(loan.isDisbursed() == true){
+				
+				final List<Guarantor> existGuarantorList = this.guarantorRepository
+						.findByLoan(loan);
+				
+				if(onHoldAmount.compareTo(BigDecimal.ZERO)>0){
+					
+					for(Guarantor guarantor : existGuarantorList){
+						
+						final List<GuarantorFundingDetails> fundingDetails = guarantor
+								.getGuarantorFundDetails();
+						
+						for(GuarantorFundingDetails guarantorFundingDetail : fundingDetails){
+							
+							if(guarantor.isSelfGuarantee()){
+								if(guarantorFundingDetail.getLinkedSavingsAccount().accountNumber.equals(account.accountNumber)){
+									
+									
+									//following 1 is for hold amount transaction type, and false is for transaction which is not reversed.
+						        	
+						        	List<DepositAccountOnHoldTransaction> depositAccountOnHoldTransaction = this.depositAccountOnHoldTransactionRepository
+						        			.findOnHoldTransactionDetail(savingId,undoTransactionAmount,1,txnDate.toDate());
+						        	
+						        	  if(!depositAccountOnHoldTransaction.isEmpty()){
+						        		  
+						        		  for(DepositAccountOnHoldTransaction undoOnHoldTxn : depositAccountOnHoldTransaction){
+							        		 if(undoOnHoldTxn.isReversed() == false){
+							        			 allowReversedOnHoldTxn = true;
+							        			 account.setOnHoldFunds(newOnHoldAmount);
+							        			 undoOnHoldTxn.setReversed(isReversed);
+								        		 this.depositAccountOnHoldTransactionRepository.saveAndFlush(undoOnHoldTxn); 
+							        		 }
+						        			  
+							        	  }  
+						        	  }
+								 }
+							  }		
+						  }	
+					   }
+				    }
+				}
+			
+			if(allowReversedOnHoldTxn == true){
+				this.businessEventNotifierService.notifyBusinessEventWasExecuted(BUSINESS_EVENTS.SAVINGS_UNDO_TRANSACTION,
+	                    constructEntityMap(BUSINESS_ENTITY.SAVINGS_TRANSACTION, transactionDetail)); 	
+			}
+			
+	    }
+		this.savingsAccountRepository.save(account);
+	}
+
+	
+	  private Map<BUSINESS_ENTITY, Object> constructEntityMap(final BUSINESS_ENTITY entityEvent, Object entity) {
+	        Map<BUSINESS_ENTITY, Object> map = new HashMap<>(1);
+	        map.put(entityEvent, entity);
+	        return map;
+	    }
+
+  
 
 }
