@@ -16,6 +16,7 @@ import javax.persistence.Table;
 
 import org.mifosplatform.portfolio.loanaccount.domain.LoanTransaction;
 import org.mifosplatform.portfolio.savings.domain.DepositAccountOnHoldTransaction;
+import org.mifosplatform.portfolio.savings.domain.SavingsAccountTransaction;
 import org.springframework.data.jpa.domain.AbstractPersistable;
 
 @Entity
@@ -29,8 +30,12 @@ public class GuarantorFundingTransaction extends AbstractPersistable<Long> {
     @ManyToOne
     @JoinColumn(name = "loan_transaction_id", nullable = true)
     private LoanTransaction loanTransaction;
+    
+    @ManyToOne
+    @JoinColumn(name = "saving_transaction_id", nullable = true)
+    private SavingsAccountTransaction savingTransaction;
 
-    @OneToOne
+	@OneToOne
     @JoinColumn(name = "deposit_on_hold_transaction_id", nullable = false)
     private DepositAccountOnHoldTransaction depositAccountOnHoldTransaction;
 
@@ -40,11 +45,12 @@ public class GuarantorFundingTransaction extends AbstractPersistable<Long> {
     protected GuarantorFundingTransaction() {}
 
     public GuarantorFundingTransaction(final GuarantorFundingDetails guarantorFundingDetails, final LoanTransaction loanTransaction,
-            final DepositAccountOnHoldTransaction depositAccountOnHoldTransaction) {
+            final DepositAccountOnHoldTransaction depositAccountOnHoldTransaction, final SavingsAccountTransaction savingTransaction ) {
         this.depositAccountOnHoldTransaction = depositAccountOnHoldTransaction;
         this.guarantorFundingDetails = guarantorFundingDetails;
         this.loanTransaction = loanTransaction;
         this.reversed = false;
+        this.savingTransaction = savingTransaction;
     }
 
     public void reverseTransaction() {
@@ -57,5 +63,37 @@ public class GuarantorFundingTransaction extends AbstractPersistable<Long> {
             }
         }
     }
+    
+  //following code change for if undo the deposit amount then release guarantor amount has to be undo (other guarantor)
+    public void reverseTransactionIfDepositUndoTxn(){
+    	   if(!this.reversed){
+    			   this.reversed = true;
+    			   BigDecimal amountForReverse = this.depositAccountOnHoldTransaction.getAmount();
+    			   this.depositAccountOnHoldTransaction.reverseTxnIfUndoDepositTxn(amountForReverse);
+    			   if(this.depositAccountOnHoldTransaction.getTransactionType().isRelease()){
+    				   this.guarantorFundingDetails.undoReleaseFunds(amountForReverse);
+    			   }
+    		   }
+       }
+    
+    //follwoing code change if undo the self saving onhold amount transaction then onhold amount has to reduce to last txn amount.(self guarantor)
+    public void undoDepositSavingAccTxnThenUndoOnhold(){
+    	if(!this.reversed){
+    		this.reversed = true; //here not doing reverse it is still need to release other guarantor amount
+    		BigDecimal amountForReverse = this.depositAccountOnHoldTransaction.getAmount();
+    		this.depositAccountOnHoldTransaction.removedOnholdsFundsWithTxnAmount(amountForReverse);
+    	}
+    }
+  
+   
+	public DepositAccountOnHoldTransaction getDepositAccountOnHoldTransaction() {
+		return this.depositAccountOnHoldTransaction;
+	}
+
+	public void setDepositAccountOnHoldTransaction(
+			DepositAccountOnHoldTransaction depositAccountOnHoldTransaction) {
+		this.depositAccountOnHoldTransaction = depositAccountOnHoldTransaction;
+	}
+
 
 }
