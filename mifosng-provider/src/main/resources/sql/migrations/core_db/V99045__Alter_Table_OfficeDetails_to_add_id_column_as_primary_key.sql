@@ -1,0 +1,6 @@
+    
+	ALTER TABLE `officedetails`
+	ADD COLUMN `id` BIGINT(20) NOT NULL AUTO_INCREMENT FIRST,
+	DROP PRIMARY KEY,
+	ADD PRIMARY KEY (`id`),
+	ADD UNIQUE INDEX `office_id` (`office_id`);

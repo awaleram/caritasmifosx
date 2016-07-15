@@ -26,6 +26,7 @@ import org.mifosplatform.portfolio.accountdetails.data.AccountSummaryCollectionD
 import org.mifosplatform.portfolio.accountdetails.data.LoanAccountSummaryData;
 import org.mifosplatform.portfolio.accountdetails.data.MpesaTransactionSummaryData;
 import org.mifosplatform.portfolio.accountdetails.data.SavingsAccountSummaryData;
+import org.mifosplatform.portfolio.client.domain.ClientRepository;
 import org.mifosplatform.portfolio.client.service.ClientReadPlatformService;
 import org.mifosplatform.portfolio.group.service.GroupReadPlatformService;
 import org.mifosplatform.portfolio.loanaccount.data.LoanApplicationTimelineData;
@@ -57,6 +58,7 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
     private final LoanRepository loanRepository;
     private final LoanChargeReadPlatformServiceImpl loanChargeReadPlatformServiceImpl;
     private final SavingsAccountChargeReadPlatformServiceImpl savingsAccountChargeReadPlatformServiceImpl;
+    private final ClientRepository clientRepository;
 
     @Autowired
     public AccountDetailsReadPlatformServiceJpaRepositoryImpl(final ClientReadPlatformService clientReadPlatformService,
@@ -65,7 +67,8 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
             final SavingsAccountRepository savingsAccountRepository,
             final LoanRepository loanRepository,
             final LoanChargeReadPlatformServiceImpl loanChargeReadPlatformServiceImpl,
-            final SavingsAccountChargeReadPlatformServiceImpl savingsAccountChargeReadPlatformServiceImpl) {
+            final SavingsAccountChargeReadPlatformServiceImpl savingsAccountChargeReadPlatformServiceImpl,
+            final ClientRepository clientRepository) {
         this.clientReadPlatformService = clientReadPlatformService;
         this.jdbcTemplate = new JdbcTemplate(dataSource);
         this.groupReadPlatformService = groupReadPlatformService;
@@ -74,12 +77,14 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
         this.loanRepository=loanRepository;
         this.loanChargeReadPlatformServiceImpl= loanChargeReadPlatformServiceImpl;
         this.savingsAccountChargeReadPlatformServiceImpl=savingsAccountChargeReadPlatformServiceImpl;
+        this.clientRepository = clientRepository;
     }
 
     @Override
     public AccountSummaryCollectionData retrieveClientAccountDetails(final Long clientId) {
         // Check if client exists
-        this.clientReadPlatformService.retrieveOne(clientId);
+    	this.clientRepository.findOne(clientId);
+       // this.clientReadPlatformService.retrieveOne(clientId);
         final String loanwhereClause = " where l.client_id = ?  group  by l.account_no";
         final String savingswhereClause = " where sa.client_id = ?  group by sa.account_no order by sa.status_enum ASC, sa.account_no ASC ";
         final List<LoanAccountSummaryData> loanAccounts = retrieveLoanAccountDetails(loanwhereClause, new Object[] { clientId });
@@ -455,7 +460,8 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
 	@Override
 	public Collection<PaymentDetailCollectionData> retrivePaymentDetail(
 			Long clientId) {
-		this.clientReadPlatformService.retrieveOne(clientId);
+	//	this.clientReadPlatformService.retrieveOne(clientId);
+		this.clientRepository.findOne(clientId);
 		return retrievePaymentDetails(new Object[] { clientId, clientId,clientId });
         
    
@@ -493,7 +499,8 @@ public class AccountDetailsReadPlatformServiceJpaRepositoryImpl implements Accou
 	@Override
 	public Collection<SharesAccountBalanceCollectionData> retriveSharesBalance(
 			Long clientId) {
-		this.clientReadPlatformService.retrieveOne(clientId);
+		//this.clientReadPlatformService.retrieveOne(clientId);
+		this.clientRepository.findOne(clientId);
 		return retrieveShareAccountBalance(new Object[] { clientId,clientId});
 	}
 	private Collection<MpesaTransactionSummaryData>retriveMpesaSummary(final Object[] inputs){

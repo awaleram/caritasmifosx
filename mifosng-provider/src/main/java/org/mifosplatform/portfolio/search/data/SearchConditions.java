@@ -16,10 +16,12 @@ public class SearchConditions {
     private final Boolean loanSeach;
     private final Boolean savingSeach;
     private final Boolean clientIdentifierSearch;
+    private final Boolean isFromSmsServer;
 
-    public SearchConditions(final String searchQueryParam, final String searchResource) {
+    public SearchConditions(final String searchQueryParam, final String searchResource,final boolean isFromSmsServer) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
+        this.isFromSmsServer = isFromSmsServer;
         this.clientSearch = (null == searchResource || searchResource.toLowerCase().contains(
                 SEARCH_SUPPORTED_RESOURCES.CLIENTS.name().toLowerCase())) ? true : false;
         this.groupSearch = (null == searchResource || searchResource.toLowerCase().contains(
@@ -33,7 +35,8 @@ public class SearchConditions {
     }
 
     public SearchConditions(final String searchQueryParam, final String searchResource, final Boolean clientSearch,
-            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch) {
+            final Boolean groupSearch, final Boolean loanSeach, final Boolean savingSeach, final Boolean clientIdentifierSearch,
+            final Boolean isFromSmsServer) {
         this.searchQuery = searchQueryParam;
         this.searchResource = searchResource;
         this.clientSearch = clientSearch;
@@ -41,6 +44,7 @@ public class SearchConditions {
         this.loanSeach = loanSeach;
         this.savingSeach = savingSeach;
         this.clientIdentifierSearch = clientIdentifierSearch;
+        this.isFromSmsServer = isFromSmsServer;
     }
 
     public String getSearchQuery() {
@@ -69,6 +73,10 @@ public class SearchConditions {
 
     public Boolean isClientIdentifierSearch() {
         return this.clientIdentifierSearch;
+    }
+   
+    public Boolean isSearchRequestFromSmsServer(){
+    	return this.isFromSmsServer;
     }
 
 }

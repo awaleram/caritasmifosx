@@ -9,6 +9,7 @@ import java.util.Collection;
 import java.util.Set;
 
 import javax.ws.rs.Consumes;
+import javax.ws.rs.DefaultValue;
 import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
@@ -72,9 +73,9 @@ public class SearchApiResource {
     @Consumes({ MediaType.APPLICATION_JSON })
     @Produces({ MediaType.APPLICATION_JSON })
     public String searchData(@Context final UriInfo uriInfo, @QueryParam("query") final String query,
-            @QueryParam("resource") final String resource) {
+            @QueryParam("resource") final String resource, @QueryParam("isSearchRequestFromSmsServer") @DefaultValue("false") final Boolean isSearchRequestFromSmsServer) {
 
-        final SearchConditions searchConditions = new SearchConditions(query, resource);
+        final SearchConditions searchConditions = new SearchConditions(query, resource, isSearchRequestFromSmsServer);
 
         final Collection<SearchData> searchResults = this.searchReadPlatformService.retriveMatchingData(searchConditions);
 
