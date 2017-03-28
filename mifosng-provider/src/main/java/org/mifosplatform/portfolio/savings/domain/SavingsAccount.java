@@ -958,11 +958,15 @@ public class SavingsAccount extends AbstractPersistable<Long> {
             canProcessBalance= transaction.canProcessBalanceCheck();
         }
             final BigDecimal withdrawalFee = null;
+            final Money accountBalanceDerived = Money.of(this.currency,account.summary.getAccountBalance());
             // deal with potential minRequiredBalance and
             // enforceMinRequiredBalance
             if (!isException && canProcessBalance) {
                 if (runningBalance.minus(minRequiredBalance).isLessThanZero()) { throw new InsufficientAccountBalanceException(
                 		account.accountNumber,accountName); }
+            }else if(accountBalanceDerived.minus(minRequiredBalance).isLessThanZero()){
+            	throw new InsufficientAccountBalanceException(
+                		account.accountNumber,accountName); 
             }
 
         }
