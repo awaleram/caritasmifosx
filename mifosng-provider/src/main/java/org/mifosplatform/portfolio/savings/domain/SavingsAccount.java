@@ -1056,8 +1056,57 @@ public class SavingsAccount extends AbstractPersistable<Long> {
     	        } 
     	    }
     
+    // caritas specific 
+    /*paying back dated charge was affecting to overdraft account even
+     * the allow-overdraft set to false
+     */
+    public void validateAccountBalanceDoesNotBecomeNegative(final String transactionAction, final BigDecimal transactionAmount,final SavingsAccount account,
+    		final String accountName, final LocalDate transactionDate){
+    	
+    	final List<SavingsAccountTransaction> transactionsSortedByDate = retreiveListOfTransactions();
+        Money runningBalance = Money.zero(this.currency);
+        Money minRequiredBalance = minRequiredBalanceDerived(getCurrency());
+        Money runningBalanceAsOnDate = Money.zero(this.currency);
+        Money txnAmountInMoney = Money.of(this.currency, transactionAmount);
+        
+        for (final SavingsAccountTransaction transaction : transactionsSortedByDate) {
+            if (transaction.isNotReversed() && transaction.isCredit()) {
+                runningBalance = runningBalance.plus(transaction.getAmount(this.currency));
+                if((transaction.transactionLocalDate().equals(transactionDate) || transaction.transactionLocalDate().isBefore(transactionDate))){
+                	runningBalanceAsOnDate = runningBalanceAsOnDate.plus(transaction.getAmount(this.currency));
+                }
+            } else if (transaction.isNotReversed() && transaction.isDebit()) {
+                runningBalance = runningBalance.minus(transaction.getAmount(this.currency));
+                if((transaction.transactionLocalDate().equals(transactionDate) || transaction.transactionLocalDate().isBefore(transactionDate))){
+                	runningBalanceAsOnDate = runningBalanceAsOnDate.minus(transaction.getAmount(this.currency));
+                }
+            }
+        }  
 
-    protected boolean isAccountLocked(final LocalDate transactionDate) {
+            // enforceMinRequiredBalance
+         
+                if (runningBalance.minus(minRequiredBalance).isLessThanZero()) {
+                    final List<ApiParameterError> dataValidationErrors = new ArrayList<>();
+                    final DataValidatorBuilder baseDataValidator = new DataValidatorBuilder(dataValidationErrors)
+                            .resource(depositAccountType().resourceName() + transactionAction);
+                    if (this.allowOverdraft) {
+                        baseDataValidator.reset().failWithCodeNoParameterAddedToErrorCode("results.in.balance.exceeding.overdraft.limit");
+                    } else {
+                    	 throw new InsufficientAccountBalanceException(
+                          		account.accountNumber,accountName);                   
+                    }
+                    if (!dataValidationErrors.isEmpty()) { throw new PlatformApiDataValidationException(dataValidationErrors); }
+                }else if ((!this.allowOverdraft) && ((runningBalance.minus(txnAmountInMoney).isLessThanZero()) ||
+            		(runningBalance.minus(minRequiredBalance).isLessThanZero()) || 
+            		(runningBalanceAsOnDate.isLessThanZero())
+            		)){
+                	throw new InsufficientAccountBalanceException(
+                      		account.accountNumber,accountName);  
+                }
+    	
+    }
+    
+      protected boolean isAccountLocked(final LocalDate transactionDate) {
         boolean isLocked = false;
         final boolean accountHasLockedInSetting = this.lockedInUntilDate != null;
         if (accountHasLockedInSetting) {

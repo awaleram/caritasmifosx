@@ -1033,7 +1033,7 @@ public class SavingsAccountWritePlatformServiceJpaRepositoryImpl implements Savi
                     financialYearBeginningMonth);
         }
 
-        account.validateAccountBalanceDoesNotBecomeNegative("." + SavingsAccountTransactionType.PAY_CHARGE.getCode(),account,account.savingsProduct().getName());
+        account.validateAccountBalanceDoesNotBecomeNegative("." + SavingsAccountTransactionType.PAY_CHARGE.getCode(),amountPaid, account,account.savingsProduct().getName(),transactionDate);
 
         this.savingAccountRepository.save(account);
 
